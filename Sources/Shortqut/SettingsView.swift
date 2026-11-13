@@ -16,15 +16,35 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Isi Ring")
                 .font(.headline)
-            Text("Seret untuk mengubah urutan. Maksimal \(RingLimits.maxItems) item.")
+            Text("Seret untuk mengubah urutan. Maksimal \(RingLimits.maxItems) item. Tombol sub ring di tiap baris menambah item yang muncul saat slice di-hover.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
             List {
                 ForEach(store.entries) { entry in
-                    RingEntryRow(entry: entry) {
-                        store.remove(id: entry.id)
-                        feedback.message = nil
+                    VStack(alignment: .leading, spacing: 4) {
+                        RingEntryRow(entry: entry, onRemove: {
+                            store.remove(id: entry.id)
+                            feedback.message = nil
+                        }) {
+                            Menu {
+                                addMenuItems { addChild($0, to: entry.id) }
+                            } label: {
+                                Image(systemName: "circle.hexagongrid")
+                            }
+                            .menuStyle(.borderlessButton)
+                            .menuIndicator(.hidden)
+                            .fixedSize()
+                            .disabled(entry.children.count >= RingLimits.maxChildren)
+                            .help("Tambah ke sub ring (muncul saat di-hover)")
+                        }
+                        ForEach(entry.children) { child in
+                            RingEntryRow(entry: child, onRemove: {
+                                store.removeChild(id: child.id, from: entry.id)
+                                feedback.message = nil
+                            })
+                            .padding(.leading, 26)
+                        }
                     }
                 }
                 .onMove { source, destination in
@@ -35,17 +55,7 @@ struct SettingsView: View {
 
             HStack {
                 Menu("Tambah") {
-                    Menu("Aksi Native") {
-                        ForEach(NativeShortcut.builtIns) { shortcut in
-                            Button(shortcut.title) { add(RingEntry(kind: .native(shortcut))) }
-                        }
-                        Divider()
-                        Button("Jalankan Shortcut…", action: addRunShortcut)
-                    }
-                    Button("Aplikasi…", action: addApp)
-                    Button("Folder atau File…", action: addFile)
-                    Button("Link Web…", action: addURL)
-                    Button("Hotkey…", action: addHotkey)
+                    addMenuItems(add)
                 }
                 .fixedSize()
                 .disabled(!RingLimits.hasRoom)
@@ -75,16 +85,40 @@ struct SettingsView: View {
         }
     }
 
-    private func addRunShortcut() {
+    private func addChild(_ entry: RingEntry, to parentID: RingEntry.ID) {
+        switch store.addChild(entry, to: parentID) {
+        case .added: feedback.message = nil
+        case .full: feedback.message = "Sub ring penuh (maksimal \(RingLimits.maxChildren) item)."
+        case .duplicate: feedback.message = "Item ini sudah ada di sub ring."
+        }
+    }
+
+    /// Isi menu tambah, dipakai untuk ring utama dan sub ring.
+    @ViewBuilder
+    private func addMenuItems(_ onAdd: @escaping (RingEntry) -> Void) -> some View {
+        Menu("Aksi Native") {
+            ForEach(NativeShortcut.builtIns) { shortcut in
+                Button(shortcut.title) { onAdd(RingEntry(kind: .native(shortcut))) }
+            }
+            Divider()
+            Button("Jalankan Shortcut…") { pickRunShortcut().map(onAdd) }
+        }
+        Button("Aplikasi…") { pickApp().map(onAdd) }
+        Button("Folder atau File…") { pickFile().map(onAdd) }
+        Button("Link Web…") { pickURL().map(onAdd) }
+        Button("Hotkey…") { pickHotkey().map(onAdd) }
+    }
+
+    private func pickRunShortcut() -> RingEntry? {
         guard let name = promptText(
             title: "Jalankan Shortcut",
             info: "Masukkan nama persis dari Shortcut di aplikasi Shortcuts.",
             placeholder: "Nama Shortcut"
-        ) else { return }
-        add(RingEntry(kind: .native(.runShortcut(name: name))))
+        ) else { return nil }
+        return RingEntry(kind: .native(.runShortcut(name: name)))
     }
 
-    private func addApp() {
+    private func pickApp() -> RingEntry? {
         let panel = NSOpenPanel()
         panel.title = "Pilih Aplikasi"
         panel.prompt = "Tambahkan"
@@ -93,12 +127,12 @@ struct SettingsView: View {
         panel.canChooseDirectories = false
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
 
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
         let name = FileManager.default.displayName(atPath: url.path)
-        add(RingEntry(kind: .app(path: url.path, name: name)))
+        return RingEntry(kind: .app(path: url.path, name: name))
     }
 
-    private func addFile() {
+    private func pickFile() -> RingEntry? {
         let panel = NSOpenPanel()
         panel.title = "Pilih Folder atau File"
         panel.prompt = "Tambahkan"
@@ -106,32 +140,32 @@ struct SettingsView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
 
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        add(RingEntry(kind: .file(path: url.path)))
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return RingEntry(kind: .file(path: url.path))
     }
 
-    private func addURL() {
+    private func pickURL() -> RingEntry? {
         guard let text = promptText(
             title: "Link Web",
             info: "Masukkan alamat yang akan dibuka di browser bawaan.",
             placeholder: "https://example.com"
-        ) else { return }
+        ) else { return nil }
 
         let normalized = text.contains("://") ? text : "https://\(text)"
         guard let url = URL(string: normalized), url.host?.isEmpty == false else {
             feedback.message = "Alamat tidak valid."
-            return
+            return nil
         }
-        add(RingEntry(kind: .url(url.absoluteString)))
+        return RingEntry(kind: .url(url.absoluteString))
     }
 
-    private func addHotkey() {
-        guard let recorded = HotkeyRecorder.record() else { return }
-        add(RingEntry(kind: .hotkey(
+    private func pickHotkey() -> RingEntry? {
+        guard let recorded = HotkeyRecorder.record() else { return nil }
+        return RingEntry(kind: .hotkey(
             keyCode: recorded.keyCode,
             flags: recorded.flags,
             display: recorded.display
-        )))
+        ))
     }
 
     /// Dialog satu kolom teks. Mengembalikan nil jika dibatalkan atau kosong.
@@ -170,11 +204,18 @@ private final class EditorModel {
 }
 
 /// Satu baris entri: ikon, label, tombol ubah, dan tombol hapus.
-private struct RingEntryRow: View {
+private struct RingEntryRow<Extra: View>: View {
     let entry: RingEntry
     let onRemove: () -> Void
+    @ViewBuilder let extra: Extra
 
     @Bindable private var state = RowState()
+
+    init(entry: RingEntry, onRemove: @escaping () -> Void, @ViewBuilder extra: () -> Extra) {
+        self.entry = entry
+        self.onRemove = onRemove
+        self.extra = extra()
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -189,6 +230,7 @@ private struct RingEntryRow: View {
                     .truncationMode(.middle)
             }
             Spacer()
+            extra
             Button { state.isEditing = true } label: {
                 Image(systemName: "pencil.circle")
             }
@@ -218,6 +260,12 @@ private struct RingEntryRow: View {
         case let .appIcon(image):
             Image(nsImage: image).resizable()
         }
+    }
+}
+
+extension RingEntryRow where Extra == EmptyView {
+    init(entry: RingEntry, onRemove: @escaping () -> Void) {
+        self.init(entry: entry, onRemove: onRemove) { EmptyView() }
     }
 }
 

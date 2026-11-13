@@ -39,10 +39,58 @@ struct RingGeometry {
         return min(Int(shifted / step), count - 1)
     }
 
+    // MARK: Sub ring
+
+    /// Sub ring berupa pita juring di luar ring utama
+    static let subInner: CGFloat = 130
+    static let subOuter: CGFloat = 184
+    /// Lebar sudut tiap potongan sub ring
+    static let subSpan: Double = 36
+
+    /// Sudut tengah potongan sub ring ke-`sub`, disebar mengelilingi arah slice induk.
+    func subAngle(parent: Int, sub: Int, count subCount: Int) -> Double {
+        Double(parent) * step + (Double(sub) - Double(subCount - 1) / 2) * Self.subSpan
+    }
+
+    func subIconAnchor(parent: Int, sub: Int, count subCount: Int) -> CGPoint {
+        point(
+            degrees: subAngle(parent: parent, sub: sub, count: subCount),
+            radius: (Self.subInner + Self.subOuter) / 2
+        )
+    }
+
+    func subIndex(at location: CGPoint, parent: Int, count subCount: Int) -> Int? {
+        let dx = location.x - center.x
+        let dy = location.y - center.y
+        let distance = hypot(dx, dy)
+        guard subCount > 0, distance >= Self.subInner, distance <= Self.subOuter else { return nil }
+
+        let degrees = atan2(Double(dx), Double(-dy)) * 180 / .pi
+        for sub in 0..<subCount {
+            var diff = degrees - subAngle(parent: parent, sub: sub, count: subCount)
+            diff = (diff + 540).truncatingRemainder(dividingBy: 360) - 180
+            if abs(diff) <= Self.subSpan / 2 { return sub }
+        }
+        return nil
+    }
+
+    func subSegmentPath(parent: Int, sub: Int, count subCount: Int) -> Path {
+        wedgePath(
+            centerDegrees: subAngle(parent: parent, sub: sub, count: subCount),
+            span: Self.subSpan,
+            inner: Self.subInner,
+            outer: Self.subOuter
+        )
+    }
+
     /// Satu slice berbentuk juring. Kedua tepi radialnya sejajar sehingga celah selalu rata.
     func segmentPath(index: Int) -> Path {
-        let boundaryStart = Double(index) * step - step / 2
-        let boundaryEnd = boundaryStart + step
+        wedgePath(centerDegrees: Double(index) * step, span: step, inner: inner, outer: outer)
+    }
+
+    func wedgePath(centerDegrees: Double, span: Double, inner: CGFloat, outer: CGFloat) -> Path {
+        let boundaryStart = centerDegrees - span / 2
+        let boundaryEnd = boundaryStart + span
         let halfGap = Self.gapPoints / 2
         let steps = 24
 
@@ -77,6 +125,17 @@ struct RingGeometry {
     }
 }
 
+struct SubSegmentShape: Shape {
+    let geometry: RingGeometry
+    let parent: Int
+    let sub: Int
+    let count: Int
+
+    func path(in rect: CGRect) -> Path {
+        geometry.subSegmentPath(parent: parent, sub: sub, count: count)
+    }
+}
+
 struct SegmentShape: Shape {
     let geometry: RingGeometry
     let index: Int
@@ -108,7 +167,7 @@ struct SliceIcon: View {
 struct RingView: View {
     let model: RingModel
 
-    private let canvas: CGFloat = 300
+    private let canvas: CGFloat = 380
     private let inner: CGFloat = 50
     private let outer: CGFloat = 124
     /// Warna isi slice dan border dibuat sama
@@ -122,6 +181,8 @@ struct RingView: View {
             count: model.items.count
         )
         let hovered = model.hovered.map { model.items[$0] }
+        let subItems = hovered?.children ?? []
+        let subHovered = model.subHovered.flatMap { subItems.indices.contains($0) ? subItems[$0] : nil }
 
         ZStack {
             // Piringan latar memakai material native macOS
@@ -133,25 +194,36 @@ struct RingView: View {
 
             ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
                 let isHovered = model.hovered == index
-                let lift: CGFloat = isHovered ? 6 : 0
-                let anchor = geometry.iconAnchor(index: index, lift: lift)
-                let liftOffset = CGSize(
-                    width: anchor.x - geometry.iconAnchor(index: index, lift: 0).x,
-                    height: anchor.y - geometry.iconAnchor(index: index, lift: 0).y
-                )
-
                 SegmentShape(geometry: geometry, index: index)
                     .fill(isHovered ? item.tint.opacity(0.9) : segmentColor)
                     .overlay(
                         SegmentShape(geometry: geometry, index: index)
                             .stroke(segmentColor, lineWidth: 1)
                     )
-                    .offset(liftOffset)
 
                 SliceIcon(icon: item.icon, isHovered: isHovered)
                     .scaleEffect(isHovered ? 1.12 : 1)
                     .position(geometry.iconAnchor(index: index, lift: 0))
-                    .offset(liftOffset)
+            }
+
+            // Sub ring: tombol bulat di luar slice yang disorot
+            if let parent = model.hovered, !subItems.isEmpty {
+                ForEach(Array(subItems.enumerated()), id: \.element.id) { sub, child in
+                    let isSubHovered = model.subHovered == sub
+                    let shape = SubSegmentShape(
+                        geometry: geometry, parent: parent, sub: sub, count: subItems.count
+                    )
+                    ZStack {
+                        shape.fill(.regularMaterial)
+                        shape.fill(isSubHovered ? child.tint.opacity(0.9) : segmentColor)
+                        shape.stroke(segmentColor, lineWidth: 1)
+                        SliceIcon(icon: child.icon, isHovered: isSubHovered)
+                            .scaleEffect(isSubHovered ? 1.12 : 0.85)
+                            .position(geometry.subIconAnchor(parent: parent, sub: sub, count: subItems.count))
+                    }
+                    .transition(.opacity)
+                }
+                .id(hovered?.id)
             }
 
             // Pusat ring: ikon slice yang disorot, atau logo Shortqut jika tidak ada
@@ -161,15 +233,15 @@ struct RingView: View {
                 .position(geometry.center)
 
             Group {
-                if let hovered {
-                    SliceIcon(icon: hovered.icon, isHovered: false)
+                if let shown = subHovered ?? hovered {
+                    SliceIcon(icon: shown.icon, isHovered: false)
                 } else {
                     Image(systemName: "circle.grid.cross")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
             }
-            .id(hovered?.id)
+            .id((subHovered ?? hovered)?.id)
             .transition(.opacity.combined(with: .scale(scale: 0.8)))
             .position(geometry.center)
         }
@@ -178,11 +250,20 @@ struct RingView: View {
         .scaleEffect(model.isOpen ? 1 : 0.6)
         .opacity(model.isOpen ? 1 : 0)
         .animation(.spring(response: 0.25, dampingFraction: 0.75), value: model.hovered)
+        .animation(.spring(response: 0.2, dampingFraction: 0.8), value: model.subHovered)
         .onContinuousHover { phase in
             switch phase {
             case .active(let location):
+                // Selama kursor menuju sub ring, slice induk tetap aktif
+                if let parent = model.hovered,
+                   let sub = geometry.subIndex(at: location, parent: parent, count: subItems.count) {
+                    model.subHovered = sub
+                    return
+                }
+                model.subHovered = nil
                 model.hovered = geometry.index(at: location)
             case .ended:
+                model.subHovered = nil
                 model.hovered = nil
             }
         }
