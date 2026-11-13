@@ -10,6 +10,8 @@ Dibuat dengan SwiftUI dan AppKit agar tampilannya terasa native di macOS, termas
 - **Aktivasi dengan Command:** tekan Command dua kali dengan cepat untuk membuka atau menutup ring.
 - **Aplikasi pilihan sendiri:** tambahkan aplikasi ke ring lewat menu **Pengaturan…**. Ikon asli aplikasi ditampilkan di ring.
 - **Aksi native yang bisa diatur:** pilih dari Screenshot (⇧⌘4), Mission Control, Kunci Layar (⌃⌘Q), Rekam Layar (⇧⌘5), dan Putar/Jeda, atau tambahkan Shortcut dari aplikasi Shortcuts lewat **Jalankan Shortcut…**. Default awal hanya Screenshot.
+- **Aksi tambahan:** buka folder/file, link web, atau kirim hotkey bebas (direkam langsung lewat dialog) dari menu **Tambah**.
+- **Atur urutan, label, dan ikon:** seret item di Pengaturan untuk mengubah urutan, lalu klik ikon pensil untuk mengganti label dan ikon (SF Symbol).
 - **Batas ring:** total aksi native dan aplikasi maksimal 12 item.
 - **Tanpa Dock:** Shortqut hanya berada di menu bar.
 - **Tutup dengan mudah:** klik di luar ring atau di area tengah untuk menutup tanpa menjalankan aksi.

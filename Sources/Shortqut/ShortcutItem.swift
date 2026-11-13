@@ -13,6 +13,7 @@ struct ShortcutItem: Identifiable {
         case openApp(path: String)
         case mediaKey(Int32)
         case runShortcut(name: String)
+        case openURL(URL)
     }
 
     let id = UUID()
@@ -23,25 +24,9 @@ struct ShortcutItem: Identifiable {
 }
 
 extension ShortcutItem {
-    /// Susun slice ring: aksi native pilihan user diikuti aplikasi pilihan user.
-    static func ring(shortcuts: [NativeShortcut], apps: [RingApp]) -> [ShortcutItem] {
-        let nativeItems = shortcuts.map { shortcut in
-            ShortcutItem(
-                title: shortcut.title,
-                icon: .symbol(shortcut.symbol),
-                tint: shortcut.tint,
-                action: shortcut.action
-            )
-        }
-        let appItems = apps.map { app in
-            ShortcutItem(
-                title: app.name,
-                icon: .appIcon(NSWorkspace.shared.icon(forFile: app.path)),
-                tint: .accentColor,
-                action: .openApp(path: app.path)
-            )
-        }
-        return nativeItems + appItems
+    /// Susun slice ring dari entri user, sesuai urutannya.
+    static func ring(entries: [RingEntry]) -> [ShortcutItem] {
+        entries.map(\.shortcutItem)
     }
 }
 
@@ -72,6 +57,9 @@ enum ActionRunner {
 
         case let .runShortcut(name):
             runShortcut(named: name)
+
+        case let .openURL(url):
+            NSWorkspace.shared.open(url)
         }
     }
 
