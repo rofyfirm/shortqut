@@ -46,7 +46,7 @@ final class RingPanel: NSPanel {
 final class RingController {
     static let size = CGSize(width: 300, height: 300)
 
-    let model = RingModel(items: ShortcutItem.ring(from: RingAppStore.shared.apps))
+    let model = RingModel(items: ShortcutItem.ring(shortcuts: NativeShortcutStore.shared.shortcuts, apps: RingAppStore.shared.apps))
     private var panel: RingPanel?
     private var clickMonitor: Any?
 
@@ -74,7 +74,7 @@ final class RingController {
         self.panel = panel
 
         // Susun ulang slice agar selalu sesuai daftar aplikasi terbaru
-        model.items = ShortcutItem.ring(from: RingAppStore.shared.apps)
+        model.items = ShortcutItem.ring(shortcuts: NativeShortcutStore.shared.shortcuts, apps: RingAppStore.shared.apps)
         panel.setFrameOrigin(originNearCursor())
         model.hovered = nil
         model.isOpen = false

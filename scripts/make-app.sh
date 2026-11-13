@@ -48,6 +48,10 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+# Ad-hoc signing biasa menghasilkan requirement berbasis cdhash yang berubah di setiap build,
+# sehingga izin Aksesibilitas yang sudah diberikan dianggap usang oleh macOS.
+# Requirement berbasis bundle identifier tetap stabil antar build.
+codesign --force --sign - --identifier com.shortqut.app \
+    -r='designated => identifier "com.shortqut.app"' "$APP"
 
 echo "Selesai: $APP"
