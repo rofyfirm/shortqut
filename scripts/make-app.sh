@@ -16,6 +16,7 @@ if [ ! -f "Assets/AppIcon.icns" ]; then
     ./scripts/make-icon.sh
 fi
 cp "Assets/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cp -R Resources/*.lproj "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -26,6 +27,13 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <string>Shortqut</string>
     <key>CFBundleDisplayName</key>
     <string>Shortqut</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>id</string>
+    </array>
     <key>CFBundleExecutable</key>
     <string>Shortqut</string>
     <key>CFBundleIdentifier</key>

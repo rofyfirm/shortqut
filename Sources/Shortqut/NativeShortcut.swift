@@ -30,9 +30,9 @@ enum NativeShortcut: Codable, Hashable, Identifiable {
         switch self {
         case .screenshot: "Screenshot"
         case .missionControl: "Mission Control"
-        case .lockScreen: "Kunci Layar"
-        case .screenRecording: "Rekam Layar"
-        case .playPause: "Putar/Jeda"
+        case .lockScreen: String(localized: "Lock Screen")
+        case .screenRecording: String(localized: "Record Screen")
+        case .playPause: String(localized: "Play/Pause")
         case let .runShortcut(name): name
         }
     }

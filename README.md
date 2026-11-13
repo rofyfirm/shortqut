@@ -1,112 +1,119 @@
 # Shortqut
 
-Action ring ringan untuk macOS, terinspirasi dari action ring Logitech. Ketuk trackpad dengan 4 jari, dan lingkaran aksi muncul tepat di posisi kursor. Pilih aksi dengan menggerakkan kursor lalu klik.
+**English** · [Bahasa Indonesia](README.id.md)
 
-Dibuat dengan SwiftUI dan AppKit agar tampilannya terasa native di macOS, termasuk dukungan dark mode dan material sistem.
+A lightweight action ring for macOS, inspired by the Logitech action ring. Tap the trackpad with 4 fingers and a ring of actions appears right at the cursor. Move the cursor to an action and click to run it.
 
-## Fitur
+Built with SwiftUI and AppKit so it feels native on macOS, including dark mode and system materials.
 
-- **Aktivasi dengan 4 jari:** ketuk trackpad dengan 4 jari untuk membuka atau menutup ring di posisi kursor.
-- **Aktivasi dengan Command:** tekan Command dua kali dengan cepat untuk membuka atau menutup ring.
-- **Aplikasi pilihan sendiri:** tambahkan aplikasi ke ring lewat menu **Pengaturan…**. Ikon asli aplikasi ditampilkan di ring.
-- **Aksi native yang bisa diatur:** pilih dari Screenshot (⇧⌘4), Mission Control, Kunci Layar (⌃⌘Q), Rekam Layar (⇧⌘5), dan Putar/Jeda, atau tambahkan Shortcut dari aplikasi Shortcuts lewat **Jalankan Shortcut…**. Default awal hanya Screenshot.
-- **Aksi tambahan:** buka folder/file, link web, atau kirim hotkey bebas (direkam langsung lewat dialog) dari menu **Tambah**.
-- **Atur urutan, label, dan ikon:** seret item di Pengaturan untuk mengubah urutan, lalu klik ikon pensil untuk mengganti label dan ikon (SF Symbol).
-- **Batas ring:** total aksi native dan aplikasi maksimal 12 item.
-- **Tanpa Dock:** Shortqut hanya berada di menu bar.
-- **Tutup dengan mudah:** klik di luar ring atau di area tengah untuk menutup tanpa menjalankan aksi.
+## Features
 
-## Persyaratan
+- **4-finger activation:** tap the trackpad with 4 fingers to open or close the ring at the cursor.
+- **Command activation:** quickly press Command twice to open or close the ring.
+- **Your own apps:** add apps to the ring from **Settings…**. The app's real icon is shown in the ring.
+- **Configurable native actions:** choose from Screenshot (⇧⌘4), Mission Control, Lock Screen (⌃⌘Q), Record Screen (⇧⌘5), and Play/Pause, or add a shortcut from the Shortcuts app with **Run Shortcut…**. Only Screenshot is enabled by default.
+- **More actions:** open a folder/file, a web link, or send any hotkey (recorded live in a dialog) from the **Add** menu.
+- **Reorder, relabel, and change icons:** drag items in Settings to reorder them, then click the pencil icon to change the label and icon (SF Symbol).
+- **Ring limit:** native actions and apps together are capped at 12 items.
+- **No Dock icon:** Shortqut lives only in the menu bar.
+- **Easy to dismiss:** click outside the ring or in the center to close it without running an action.
+- **Localized UI:** English and Indonesian, following the system language.
 
-- macOS 14 (Sonoma) atau lebih baru
-- Trackpad
-- Xcode Command Line Tools (untuk build dari source)
+## Requirements
 
-## Instalasi
+- macOS 14 (Sonoma) or later
+- A trackpad
+- Xcode Command Line Tools (to build from source)
 
-### Dari DMG
+## Installation
 
-1. Buka `Shortqut-<versi>.dmg`.
-2. Seret **Shortqut** ke folder **Applications**.
-3. Buka Shortqut dari Applications.
+### From DMG
 
-Jika macOS memblokir app karena belum dinotarisasi, klik kanan Shortqut → **Open**, atau jalankan:
+1. Open `Shortqut-<version>.dmg`.
+2. Drag **Shortqut** into the **Applications** folder.
+3. Launch Shortqut from Applications.
+
+If macOS blocks the app because it isn't notarized, right-click Shortqut → **Open**, or run:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Shortqut.app
 ```
 
-### Build dari source
+### Build from source
 
 ```bash
 git clone https://github.com/<username>/shortqut.git
 cd shortqut
-./scripts/make-app.sh        # membuat build/Shortqut.app
+./scripts/make-app.sh        # creates build/Shortqut.app
 open build/Shortqut.app
 ```
 
-Untuk membuat DMG:
+To build a DMG:
 
 ```bash
-./scripts/make-dmg.sh        # membuat build/Shortqut-<versi>.dmg
+./scripts/make-dmg.sh        # creates build/Shortqut-<version>.dmg
 ```
 
-## Pengaturan izin
+## Permissions
 
-Shortqut membutuhkan izin **Aksesibilitas** agar aksi keyboard (misalnya Screenshot) bisa dikirim.
+Shortqut needs the **Accessibility** permission to send keyboard actions (for example Screenshot).
 
-1. Buka menu bar Shortqut → **Berikan Izin Aksesibilitas…**
-2. Aktifkan Shortqut di **System Settings → Privacy & Security → Accessibility**.
+1. Open the Shortqut menu bar item → **Grant Accessibility Permission…**
+2. Enable Shortqut in **System Settings → Privacy & Security → Accessibility**.
 
-Jika double-press Command tidak berfungsi, aktifkan juga Shortqut di **Privacy & Security → Input Monitoring**.
+If double-pressing Command doesn't work, also enable Shortqut in **Privacy & Security → Input Monitoring**.
 
-## Cara menggunakan
+## Usage
 
-| Aksi | Cara |
+| Action | How |
 | --- | --- |
-| Membuka ring | Ketuk trackpad dengan 4 jari, atau tekan Command dua kali |
-| Memilih aksi | Gerakkan kursor ke slice, lalu klik |
-| Menutup tanpa aksi | Klik di luar ring atau di tengah |
-| Membuka Pengaturan | Menu bar → **Pengaturan…** (⌘,) |
+| Open the ring | Tap the trackpad with 4 fingers, or press Command twice |
+| Choose an action | Move the cursor to a slice, then click |
+| Close without an action | Click outside the ring or in the center |
+| Open Settings | Menu bar → **Settings…** (⌘,) |
 
-Di Pengaturan, Anda bisa menambahkan aplikasi lewat **Tambah Aplikasi…** dan menghapusnya dengan tombol −. Finder dan Terminal dipasang secara default.
+In Settings, you can add apps with **Add → Application…** and remove them with the − button. Finder and Terminal are added by default.
 
-## Struktur proyek
+## Project structure
 
 ```
 Sources/Shortqut/
-├── ShortqutApp.swift            # Entry point, menu bar, dan AppDelegate
-├── TrackpadGestureMonitor.swift # Deteksi ketukan 4 jari (MultitouchSupport)
-├── CommandDoubleTapMonitor.swift# Deteksi double-press Command
-├── RingPanelController.swift    # Panel transparan dan posisi di kursor
-├── RingView.swift               # Geometri dan tampilan ring
-├── RingAppStore.swift           # Daftar aplikasi pilihan (maks. 11)
-├── ShortcutItem.swift           # Model aksi dan eksekusi aksi
-├── SettingsView.swift           # Jendela Pengaturan
-└── Permissions.swift            # Izin Aksesibilitas
+├── ShortqutApp.swift            # Entry point, menu bar, and AppDelegate
+├── TrackpadGestureMonitor.swift # 4-finger tap detection (MultitouchSupport)
+├── CommandDoubleTapMonitor.swift# Command double-press detection
+├── RingPanelController.swift    # Transparent panel and cursor positioning
+├── RingView.swift               # Ring geometry and drawing
+├── RingStore.swift              # Ring items (apps, actions, sub rings)
+├── ShortcutItem.swift           # Action model and execution
+├── SettingsView.swift           # Settings window
+└── Permissions.swift            # Accessibility permission
+Resources/
+├── en.lproj/Localizable.strings # English UI strings (source keys)
+└── id.lproj/Localizable.strings # Indonesian UI strings
 scripts/
-├── make-app.sh                  # Build release dan bundle .app
-├── make-dmg.sh                  # Membuat DMG (opsional sign dan notarisasi)
-├── make-icon.swift              # Menggambar ikon 1024×1024
-└── make-icon.sh                 # Membuat AppIcon.icns
+├── make-app.sh                  # Release build and .app bundle
+├── make-dmg.sh                  # Builds a DMG (optional signing and notarization)
+├── make-icon.swift              # Draws the 1024×1024 icon
+└── make-icon.sh                 # Creates AppIcon.icns
 ```
 
-## Kustomisasi
+## Customization
 
-- **Batas item ring:** ubah `RingLimits.maxItems` di [NativeShortcutStore.swift](Sources/Shortqut/NativeShortcutStore.swift).
-- **Aksi native:** tambah atau ubah kasus `NativeShortcut` di [NativeShortcutStore.swift](Sources/Shortqut/NativeShortcutStore.swift).
-- **Ukuran ring:** ubah `canvas`, `inner`, dan `outer` di [RingView.swift](Sources/Shortqut/RingView.swift), serta `size` di `RingController` dalam [RingPanelController.swift](Sources/Shortqut/RingPanelController.swift).
-- **Celah antar slice:** ubah `gapPoints` di [RingView.swift](Sources/Shortqut/RingView.swift).
-- **Sensitivitas ketukan:** ubah `maxTapDuration`, `maxDrift`, dan `cooldown` di [TrackpadGestureMonitor.swift](Sources/Shortqut/TrackpadGestureMonitor.swift).
-- **Jeda double-press Command:** ubah `maxInterval` di [CommandDoubleTapMonitor.swift](Sources/Shortqut/CommandDoubleTapMonitor.swift).
-- **Ikon:** jalankan `./scripts/make-icon.sh` setelah mengubah [make-icon.swift](scripts/make-icon.swift).
+- **Ring item limit:** change `RingLimits.maxItems` in [RingStore.swift](Sources/Shortqut/RingStore.swift).
+- **Native actions:** add or edit `NativeShortcut` cases in [NativeShortcut.swift](Sources/Shortqut/NativeShortcut.swift).
+- **Ring size:** change `canvas`, `inner`, and `outer` in [RingView.swift](Sources/Shortqut/RingView.swift), and `size` in `RingController` in [RingPanelController.swift](Sources/Shortqut/RingPanelController.swift).
+- **Gap between slices:** change `gapPoints` in [RingView.swift](Sources/Shortqut/RingView.swift).
+- **Tap sensitivity:** change `maxTapDuration`, `maxDrift`, and `cooldown` in [TrackpadGestureMonitor.swift](Sources/Shortqut/TrackpadGestureMonitor.swift).
+- **Command double-press interval:** change `maxInterval` in [CommandDoubleTapMonitor.swift](Sources/Shortqut/CommandDoubleTapMonitor.swift).
+- **UI strings:** edit the `Localizable.strings` files in `Resources/<lang>.lproj/`. Keys are the English text; add a new `<lang>.lproj` folder for another language.
+- **Icon:** run `./scripts/make-icon.sh` after editing [make-icon.swift](scripts/make-icon.swift).
 
-## Catatan teknis
+## Technical notes
 
-- Deteksi ketukan trackpad memakai framework privat **MultitouchSupport** yang dimuat dengan `dlopen`. Ini bukan API publik Apple, jadi bisa berubah di versi macOS berikutnya.
-- Karena memakai API privat, Shortqut **tidak bisa dikirim ke Mac App Store**. Distribusi dilakukan lewat DMG.
-- Aksi keyboard dikirim lewat `CGEvent` dan membutuhkan izin Aksesibilitas.
+- Trackpad tap detection uses the private **MultitouchSupport** framework, loaded with `dlopen`. It isn't a public Apple API, so it may change in future macOS versions.
+- Because it relies on a private API, Shortqut **cannot be shipped on the Mac App Store**. Distribution is via DMG.
+- Keyboard actions are sent through `CGEvent` and require the Accessibility permission.
 
-## Lisensi
+## License
 
-Belum ditentukan.
+Not yet specified.
