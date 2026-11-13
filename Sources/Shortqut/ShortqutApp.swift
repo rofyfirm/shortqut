@@ -39,6 +39,17 @@ struct MenuContent: View {
 
         Divider()
 
+        Toggle("Jalankan Saat Login", isOn: Binding(
+            get: { LaunchAtLogin.isEnabled },
+            set: { enabled in
+                if LaunchAtLogin.setEnabled(enabled), enabled, LaunchAtLogin.needsApproval {
+                    LaunchAtLogin.openLoginItemsSettings()
+                }
+            }
+        ))
+
+        Divider()
+
         Button("Keluar Shortqut") {
             NSApp.terminate(nil)
         }

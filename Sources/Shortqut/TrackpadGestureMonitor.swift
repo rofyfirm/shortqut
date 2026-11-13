@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 
 /// Mendeteksi ketukan 4 jari di trackpad.
 ///
@@ -26,6 +26,8 @@ final class TrackpadGestureMonitor {
     private typealias CreateListFn = @convention(c) () -> Unmanaged<CFArray>?
     private typealias RegisterFn = @convention(c) (MTDeviceRef, MTContactCallback) -> Void
     private typealias StartFn = @convention(c) (MTDeviceRef, Int32) -> Void
+    private typealias StopFn = @convention(c) (MTDeviceRef) -> Void
+    private typealias UnregisterFn = @convention(c) (MTDeviceRef, MTContactCallback) -> Void
 
     private struct MTPoint {
         var x: Float
@@ -66,6 +68,14 @@ final class TrackpadGestureMonitor {
 
     private var devices: [MTDeviceRef] = []
 
+    private var createList: CreateListFn?
+    private var registerCallback: RegisterFn?
+    private var unregisterCallback: UnregisterFn?
+    private var startDevice: StartFn?
+    private var stopDevice: StopFn?
+    private var wakeObservers: [NSObjectProtocol] = []
+    private var restartWork: DispatchWorkItem?
+
     // MARK: State machine (hanya diakses dari thread callback trackpad)
 
     private var gestureActive = false
@@ -78,32 +88,95 @@ final class TrackpadGestureMonitor {
     // MARK: Lifecycle
 
     func start() {
+        guard loadFunctions() else { return }
+        _ = startDevices()
+        observeWake()
+    }
+
+    private func loadFunctions() -> Bool {
         let path = "/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport"
         guard let lib = dlopen(path, RTLD_NOW),
               let createSym = dlsym(lib, "MTDeviceCreateList"),
               let registerSym = dlsym(lib, "MTRegisterContactFrameCallback"),
-              let startSym = dlsym(lib, "MTDeviceStart")
+              let unregisterSym = dlsym(lib, "MTUnregisterContactFrameCallback"),
+              let startSym = dlsym(lib, "MTDeviceStart"),
+              let stopSym = dlsym(lib, "MTDeviceStop")
         else {
             NSLog("Shortqut: MultitouchSupport tidak tersedia")
-            return
+            return false
         }
 
-        let createList = unsafeBitCast(createSym, to: CreateListFn.self)
-        let register = unsafeBitCast(registerSym, to: RegisterFn.self)
-        let startDevice = unsafeBitCast(startSym, to: StartFn.self)
+        createList = unsafeBitCast(createSym, to: CreateListFn.self)
+        registerCallback = unsafeBitCast(registerSym, to: RegisterFn.self)
+        unregisterCallback = unsafeBitCast(unregisterSym, to: UnregisterFn.self)
+        startDevice = unsafeBitCast(startSym, to: StartFn.self)
+        stopDevice = unsafeBitCast(stopSym, to: StopFn.self)
+        return true
+    }
 
+    /// Mendaftarkan dan menjalankan semua trackpad. Mengembalikan jumlah perangkat yang berhasil.
+    @discardableResult
+    private func startDevices() -> Int {
+        guard let createList, let registerCallback, let startDevice else { return 0 }
         guard let list = createList()?.takeRetainedValue() else {
             NSLog("Shortqut: tidak ada trackpad yang terdeteksi")
-            return
+            return 0
         }
 
         Self.current = self
         for index in 0..<CFArrayGetCount(list) {
             guard let raw = CFArrayGetValueAtIndex(list, index) else { continue }
             let device = UnsafeMutableRawPointer(mutating: raw)
-            register(device, Self.contactCallback)
+            registerCallback(device, Self.contactCallback)
             startDevice(device, 0)
             devices.append(device)
+        }
+        return devices.count
+    }
+
+    private func stopDevices() {
+        for device in devices {
+            unregisterCallback?(device, Self.contactCallback)
+            stopDevice?(device)
+        }
+        devices.removeAll()
+
+        // Callback sudah dilepas, jadi aman mereset status gesture
+        gestureActive = false
+        gestureInvalid = false
+    }
+
+    // MARK: Sleep / wake
+
+    /// Setelah Mac bangun dari sleep, perangkat trackpad sering berhenti mengirim frame sentuhan.
+    /// Karena itu semua perangkat didaftar ulang setiap kali Mac atau layar bangun.
+    private func observeWake() {
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
+            let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.scheduleRestart(attempt: 0)
+            }
+            wakeObservers.append(token)
+        }
+    }
+
+    /// Jeda singkat agar trackpad siap dulu. Jika belum ada perangkat, dicoba ulang.
+    private func scheduleRestart(attempt: Int) {
+        restartWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.restartDevices(attempt: attempt)
+        }
+        restartWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
+    }
+
+    private func restartDevices(attempt: Int) {
+        stopDevices()
+        let count = startDevices()
+        NSLog("Shortqut: trackpad didaftarkan ulang (\(count) perangkat, percobaan \(attempt + 1))")
+
+        if count == 0, attempt < 5 {
+            scheduleRestart(attempt: attempt + 1)
         }
     }
 
