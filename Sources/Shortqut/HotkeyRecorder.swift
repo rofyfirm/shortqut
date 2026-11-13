@@ -15,13 +15,13 @@ enum HotkeyRecorder {
     /// Menampilkan dialog dan menunggu user menekan kombinasi tombol. Nil jika dibatalkan.
     static func record() -> Recorded? {
         let alert = NSAlert()
-        alert.messageText = "Rekam Hotkey"
-        alert.informativeText = "Tekan kombinasi tombol yang ingin dikirim saat item ini dipilih."
-        alert.addButton(withTitle: "Tambahkan")
-        alert.addButton(withTitle: "Batal")
+        alert.messageText = String(localized: "Record Hotkey")
+        alert.informativeText = String(localized: "Press the key combination to send when this item is selected.")
+        alert.addButton(withTitle: String(localized: "Add"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         alert.buttons[0].isEnabled = false
 
-        let label = NSTextField(labelWithString: "Menunggu tombol…")
+        let label = NSTextField(labelWithString: String(localized: "Waiting for keys…"))
         label.alignment = .center
         label.font = .monospacedSystemFont(ofSize: 22, weight: .medium)
         label.frame = NSRect(x: 0, y: 0, width: 260, height: 36)

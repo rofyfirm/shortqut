@@ -9,7 +9,7 @@ struct ShortqutApp: App {
             MenuContent(ring: appDelegate.ringController)
         }
 
-        Window("Pengaturan Shortqut", id: "settings") {
+        Window("Shortqut Settings", id: "settings") {
             SettingsView()
         }
         .windowResizability(.contentSize)
@@ -21,25 +21,25 @@ struct MenuContent: View {
     let ring: RingController
 
     var body: some View {
-        Button("Tampilkan Shortqut") {
+        Button("Show Shortqut") {
             ring.showAtCursor()
         }
 
-        Button("Pengaturan…") {
+        Button("Settings…") {
             openWindow(id: "settings")
             NSApp.activate()
         }
         .keyboardShortcut(",")
 
         Button(Permissions.hasAccessibility
-               ? "Izin Aksesibilitas: Aktif"
-               : "Berikan Izin Aksesibilitas…") {
+               ? String(localized: "Accessibility Permission: Enabled")
+               : String(localized: "Grant Accessibility Permission…")) {
             Permissions.requestAccessibility()
         }
 
         Divider()
 
-        Toggle("Jalankan Saat Login", isOn: Binding(
+        Toggle("Launch at Login", isOn: Binding(
             get: { LaunchAtLogin.isEnabled },
             set: { enabled in
                 if LaunchAtLogin.setEnabled(enabled), enabled, LaunchAtLogin.needsApproval {
@@ -50,7 +50,7 @@ struct MenuContent: View {
 
         Divider()
 
-        Button("Keluar Shortqut") {
+        Button("Quit Shortqut") {
             NSApp.terminate(nil)
         }
         .keyboardShortcut("q")

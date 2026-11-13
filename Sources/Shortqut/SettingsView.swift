@@ -14,9 +14,9 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Isi Ring")
+            Text("Ring Contents")
                 .font(.headline)
-            Text("Seret untuk mengubah urutan. Maksimal \(RingLimits.maxItems) item. Tombol sub ring di tiap baris menambah item yang muncul saat slice di-hover.")
+            Text("Drag to reorder. Maximum \(RingLimits.maxItems) items. The sub ring button on each row adds items that appear when the slice is hovered.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -36,7 +36,7 @@ struct SettingsView: View {
                             .menuIndicator(.hidden)
                             .fixedSize()
                             .disabled(entry.children.count >= RingLimits.maxChildren)
-                            .help("Tambah ke sub ring (muncul saat di-hover)")
+                            .help("Add to sub ring (appears on hover)")
                         }
                         ForEach(entry.children) { child in
                             RingEntryRow(entry: child, onRemove: {
@@ -54,7 +54,7 @@ struct SettingsView: View {
             .frame(minHeight: 260)
 
             HStack {
-                Menu("Tambah") {
+                Menu("Add") {
                     addMenuItems(add)
                 }
                 .fixedSize()
@@ -80,48 +80,48 @@ struct SettingsView: View {
     private func add(_ entry: RingEntry) {
         switch store.add(entry) {
         case .added: feedback.message = nil
-        case .full: feedback.message = "Ring penuh (maksimal \(RingLimits.maxItems) item)."
-        case .duplicate: feedback.message = "Item ini sudah ada di ring."
+        case .full: feedback.message = String(localized: "Ring is full (maximum \(RingLimits.maxItems) items).")
+        case .duplicate: feedback.message = String(localized: "This item is already in the ring.")
         }
     }
 
     private func addChild(_ entry: RingEntry, to parentID: RingEntry.ID) {
         switch store.addChild(entry, to: parentID) {
         case .added: feedback.message = nil
-        case .full: feedback.message = "Sub ring penuh (maksimal \(RingLimits.maxChildren) item)."
-        case .duplicate: feedback.message = "Item ini sudah ada di sub ring."
+        case .full: feedback.message = String(localized: "Sub ring is full (maximum \(RingLimits.maxChildren) items).")
+        case .duplicate: feedback.message = String(localized: "This item is already in the sub ring.")
         }
     }
 
     /// Isi menu tambah, dipakai untuk ring utama dan sub ring.
     @ViewBuilder
     private func addMenuItems(_ onAdd: @escaping (RingEntry) -> Void) -> some View {
-        Menu("Aksi Native") {
+        Menu("Native Actions") {
             ForEach(NativeShortcut.builtIns) { shortcut in
                 Button(shortcut.title) { onAdd(RingEntry(kind: .native(shortcut))) }
             }
             Divider()
-            Button("Jalankan Shortcut…") { pickRunShortcut().map(onAdd) }
+            Button("Run Shortcut…") { pickRunShortcut().map(onAdd) }
         }
-        Button("Aplikasi…") { pickApp().map(onAdd) }
-        Button("Folder atau File…") { pickFile().map(onAdd) }
-        Button("Link Web…") { pickURL().map(onAdd) }
+        Button("Application…") { pickApp().map(onAdd) }
+        Button("Folder or File…") { pickFile().map(onAdd) }
+        Button("Web Link…") { pickURL().map(onAdd) }
         Button("Hotkey…") { pickHotkey().map(onAdd) }
     }
 
     private func pickRunShortcut() -> RingEntry? {
         guard let name = promptText(
-            title: "Jalankan Shortcut",
-            info: "Masukkan nama persis dari Shortcut di aplikasi Shortcuts.",
-            placeholder: "Nama Shortcut"
+            title: String(localized: "Run Shortcut"),
+            info: String(localized: "Enter the exact name of the shortcut in the Shortcuts app."),
+            placeholder: String(localized: "Shortcut name")
         ) else { return nil }
         return RingEntry(kind: .native(.runShortcut(name: name)))
     }
 
     private func pickApp() -> RingEntry? {
         let panel = NSOpenPanel()
-        panel.title = "Pilih Aplikasi"
-        panel.prompt = "Tambahkan"
+        panel.title = String(localized: "Choose Application")
+        panel.prompt = String(localized: "Add")
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -134,8 +134,8 @@ struct SettingsView: View {
 
     private func pickFile() -> RingEntry? {
         let panel = NSOpenPanel()
-        panel.title = "Pilih Folder atau File"
-        panel.prompt = "Tambahkan"
+        panel.title = String(localized: "Choose Folder or File")
+        panel.prompt = String(localized: "Add")
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
@@ -146,14 +146,14 @@ struct SettingsView: View {
 
     private func pickURL() -> RingEntry? {
         guard let text = promptText(
-            title: "Link Web",
-            info: "Masukkan alamat yang akan dibuka di browser bawaan.",
+            title: String(localized: "Web Link"),
+            info: String(localized: "Enter the address to open in the default browser."),
             placeholder: "https://example.com"
         ) else { return nil }
 
         let normalized = text.contains("://") ? text : "https://\(text)"
         guard let url = URL(string: normalized), url.host?.isEmpty == false else {
-            feedback.message = "Alamat tidak valid."
+            feedback.message = String(localized: "Invalid address.")
             return nil
         }
         return RingEntry(kind: .url(url.absoluteString))
@@ -173,8 +173,8 @@ struct SettingsView: View {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = info
-        alert.addButton(withTitle: "Tambahkan")
-        alert.addButton(withTitle: "Batal")
+        alert.addButton(withTitle: String(localized: "Add"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
 
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
         field.placeholderString = placeholder
@@ -235,7 +235,7 @@ private struct RingEntryRow<Extra: View>: View {
                 Image(systemName: "pencil.circle")
             }
             .buttonStyle(.borderless)
-            .help("Ubah label dan ikon")
+            .help("Edit label and icon")
             .popover(isPresented: $state.isEditing, arrowEdge: .trailing) {
                 EntryEditor(entry: entry, isPresented: $state.isEditing)
             }
@@ -244,7 +244,7 @@ private struct RingEntryRow<Extra: View>: View {
                     .foregroundStyle(.red)
             }
             .buttonStyle(.borderless)
-            .help("Hapus dari ring")
+            .help("Remove from ring")
         }
         .padding(.vertical, 2)
     }
@@ -299,7 +299,7 @@ private struct EntryEditor: View {
             TextField(entry.defaultTitle, text: $model.title)
                 .textFieldStyle(.roundedBorder)
 
-            Text("Ikon").font(.subheadline.weight(.semibold))
+            Text("Icon").font(.subheadline.weight(.semibold))
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 8), spacing: 4) {
                 ForEach(Self.presets, id: \.self) { name in
                     Button { model.symbol = name } label: {
@@ -313,22 +313,22 @@ private struct EntryEditor: View {
                     .buttonStyle(.plain)
                 }
             }
-            TextField("Nama SF Symbol (opsional)", text: $model.symbol)
+            TextField("SF Symbol name (optional)", text: $model.symbol)
                 .textFieldStyle(.roundedBorder)
             if !symbolIsValid {
-                Text("Simbol tidak dikenal.")
+                Text("Unknown symbol.")
                     .font(.caption)
                     .foregroundStyle(.red)
             }
 
             HStack {
-                Button("Setel Ulang") {
+                Button("Reset") {
                     model.title = ""
                     model.symbol = ""
                 }
                 Spacer()
-                Button("Batal") { isPresented = false }
-                Button("Simpan", action: save)
+                Button("Cancel") { isPresented = false }
+                Button("Save", action: save)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!symbolIsValid)
             }
