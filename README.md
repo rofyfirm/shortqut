@@ -8,8 +8,9 @@ Dibuat dengan SwiftUI dan AppKit agar tampilannya terasa native di macOS, termas
 
 - **Aktivasi dengan 4 jari:** ketuk trackpad dengan 4 jari untuk membuka atau menutup ring di posisi kursor.
 - **Aktivasi dengan Command:** tekan Command dua kali dengan cepat untuk membuka atau menutup ring.
-- **Aplikasi pilihan sendiri:** tambahkan hingga 11 aplikasi ke ring lewat menu **Pengaturan…**. Ikon asli aplikasi ditampilkan di ring.
-- **Screenshot bawaan:** aksi Screenshot (⇧⌘4) selalu tersedia.
+- **Aplikasi pilihan sendiri:** tambahkan aplikasi ke ring lewat menu **Pengaturan…**. Ikon asli aplikasi ditampilkan di ring.
+- **Aksi native yang bisa diatur:** pilih dari Screenshot (⇧⌘4), Mission Control, Kunci Layar (⌃⌘Q), Rekam Layar (⇧⌘5), dan Putar/Jeda, atau tambahkan Shortcut dari aplikasi Shortcuts lewat **Jalankan Shortcut…**. Default awal hanya Screenshot.
+- **Batas ring:** total aksi native dan aplikasi maksimal 12 item.
 - **Tanpa Dock:** Shortqut hanya berada di menu bar.
 - **Tutup dengan mudah:** klik di luar ring atau di area tengah untuk menutup tanpa menjalankan aksi.
 
@@ -90,8 +91,8 @@ scripts/
 
 ## Kustomisasi
 
-- **Batas aplikasi:** ubah `maxApps` di [RingAppStore.swift](Sources/Shortqut/RingAppStore.swift).
-- **Aksi bawaan:** ubah `ShortcutItem.screenshot` di [ShortcutItem.swift](Sources/Shortqut/ShortcutItem.swift).
+- **Batas item ring:** ubah `RingLimits.maxItems` di [NativeShortcutStore.swift](Sources/Shortqut/NativeShortcutStore.swift).
+- **Aksi native:** tambah atau ubah kasus `NativeShortcut` di [NativeShortcutStore.swift](Sources/Shortqut/NativeShortcutStore.swift).
 - **Ukuran ring:** ubah `canvas`, `inner`, dan `outer` di [RingView.swift](Sources/Shortqut/RingView.swift), serta `size` di `RingController` dalam [RingPanelController.swift](Sources/Shortqut/RingPanelController.swift).
 - **Celah antar slice:** ubah `gapPoints` di [RingView.swift](Sources/Shortqut/RingView.swift).
 - **Sensitivitas ketukan:** ubah `maxTapDuration`, `maxDrift`, dan `cooldown` di [TrackpadGestureMonitor.swift](Sources/Shortqut/TrackpadGestureMonitor.swift).

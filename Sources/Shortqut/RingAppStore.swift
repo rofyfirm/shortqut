@@ -12,9 +12,6 @@ struct RingApp: Codable, Identifiable, Equatable {
 @Observable
 final class RingAppStore {
     static let shared = RingAppStore()
-    /// Jumlah maksimal aplikasi kustom. Naikkan angka ini jika perlu lebih banyak.
-    static let maxApps = 11
-
     private static let defaultsKey = "ringApps"
 
     private(set) var apps: [RingApp]
@@ -26,7 +23,7 @@ final class RingAppStore {
     /// Menambahkan aplikasi. Mengembalikan false jika sudah penuh atau sudah ada.
     @discardableResult
     func add(appURL: URL) -> Bool {
-        guard apps.count < Self.maxApps,
+        guard RingLimits.hasRoom,
               !apps.contains(where: { $0.path == appURL.path })
         else { return false }
 
