@@ -21,6 +21,8 @@ struct ShortcutItem: Identifiable {
     let icon: Icon
     let tint: Color
     let action: Action
+    /// Item sub ring yang muncul saat slice ini di-hover.
+    var children: [ShortcutItem] = []
 }
 
 extension ShortcutItem {

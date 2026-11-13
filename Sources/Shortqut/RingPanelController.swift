@@ -7,6 +7,8 @@ final class RingModel {
     var items: [ShortcutItem]
     var isOpen = false
     var hovered: Int?
+    /// Index item sub ring yang sedang disorot (milik slice `hovered`)
+    var subHovered: Int?
     var onSelect: ((ShortcutItem?) -> Void)?
 
     init(items: [ShortcutItem]) {
@@ -14,7 +16,16 @@ final class RingModel {
     }
 
     func activate() {
-        onSelect?(hovered.map { items[$0] })
+        guard let hovered else {
+            onSelect?(nil)
+            return
+        }
+        let parent = items[hovered]
+        if let subHovered, parent.children.indices.contains(subHovered) {
+            onSelect?(parent.children[subHovered])
+        } else {
+            onSelect?(parent)
+        }
     }
 }
 
@@ -44,7 +55,7 @@ final class RingPanel: NSPanel {
 
 /// Menampilkan dan menyembunyikan ring tepat di posisi kursor.
 final class RingController {
-    static let size = CGSize(width: 300, height: 300)
+    static let size = CGSize(width: 380, height: 380)
 
     let model = RingModel(items: ShortcutItem.ring(entries: RingStore.shared.entries))
     private var panel: RingPanel?
@@ -77,6 +88,7 @@ final class RingController {
         model.items = ShortcutItem.ring(entries: RingStore.shared.entries)
         panel.setFrameOrigin(originNearCursor())
         model.hovered = nil
+        model.subHovered = nil
         model.isOpen = false
         panel.orderFrontRegardless()
 

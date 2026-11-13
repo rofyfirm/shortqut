@@ -17,11 +17,28 @@ struct RingEntry: Codable, Identifiable, Equatable {
     var customTitle: String?
     /// Nama SF Symbol buatan user. Nil memakai ikon bawaan.
     var customSymbol: String?
+    /// Isi sub ring yang muncul saat entri ini di-hover. Hanya satu tingkat.
+    var children: [RingEntry] = []
 
-    init(kind: Kind, customTitle: String? = nil, customSymbol: String? = nil) {
+    init(kind: Kind, customTitle: String? = nil, customSymbol: String? = nil, children: [RingEntry] = []) {
         self.kind = kind
         self.customTitle = customTitle
         self.customSymbol = customSymbol
+        self.children = children
+    }
+
+    // Data lama tidak punya `children`, jadi dibaca sebagai opsional.
+    private enum CodingKeys: String, CodingKey {
+        case id, kind, customTitle, customSymbol, children
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        kind = try c.decode(Kind.self, forKey: .kind)
+        customTitle = try c.decodeIfPresent(String.self, forKey: .customTitle)
+        customSymbol = try c.decodeIfPresent(String.self, forKey: .customSymbol)
+        children = try c.decodeIfPresent([RingEntry].self, forKey: .children) ?? []
     }
 
     // MARK: Identitas
@@ -118,7 +135,13 @@ struct RingEntry: Codable, Identifiable, Equatable {
     }
 
     var shortcutItem: ShortcutItem {
-        ShortcutItem(title: title, icon: icon, tint: tint, action: action)
+        ShortcutItem(
+            title: title,
+            icon: icon,
+            tint: tint,
+            action: action,
+            children: children.map { $0.shortcutItem }
+        )
     }
 }
 
@@ -128,6 +151,9 @@ enum RingLimits {
 
     static var usedSlots: Int { RingStore.shared.entries.count }
     static var hasRoom: Bool { usedSlots < maxItems }
+
+    /// Batas item per sub ring.
+    static let maxChildren = 6
 }
 
 enum RingAddResult {
@@ -174,9 +200,38 @@ final class RingStore {
     }
 
     func update(id: RingEntry.ID, title: String?, symbol: String?) {
-        guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
-        entries[index].customTitle = title
-        entries[index].customSymbol = symbol
+        if let index = entries.firstIndex(where: { $0.id == id }) {
+            entries[index].customTitle = title
+            entries[index].customSymbol = symbol
+            save()
+            return
+        }
+        for parent in entries.indices {
+            if let child = entries[parent].children.firstIndex(where: { $0.id == id }) {
+                entries[parent].children[child].customTitle = title
+                entries[parent].children[child].customSymbol = symbol
+                save()
+                return
+            }
+        }
+    }
+
+    func addChild(_ entry: RingEntry, to parentID: RingEntry.ID) -> RingAddResult {
+        guard let parent = entries.firstIndex(where: { $0.id == parentID }) else { return .full }
+        let siblings = entries[parent].children
+        guard !siblings.contains(where: { $0.dedupKey == entry.dedupKey }) else { return .duplicate }
+        guard siblings.count < RingLimits.maxChildren else { return .full }
+        // Sub ring hanya satu tingkat
+        var child = entry
+        child.children = []
+        entries[parent].children.append(child)
+        save()
+        return .added
+    }
+
+    func removeChild(id: RingEntry.ID, from parentID: RingEntry.ID) {
+        guard let parent = entries.firstIndex(where: { $0.id == parentID }) else { return }
+        entries[parent].children.removeAll { $0.id == id }
         save()
     }
 
